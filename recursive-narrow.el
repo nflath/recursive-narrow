@@ -4,7 +4,7 @@
 
 ;; Author: Nathaniel Flath <flat0103@gmail.com>
 ;; URL: http://github.com/nflath/recursive-narrow
-;; Version: 1.2
+;; Version: 1.3
 
 ;; This file is not part of GNU Emacs.
 
