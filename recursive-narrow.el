@@ -58,7 +58,7 @@ or org subtree.  If this has no effect, widen the buffer."
   (let ((old-recursive-narrow-buffers (list-length recursive-narrow-buffers))
         (recursive-state-changed t))
     (cond ((region-active-p) (recursive-narrow-to-region (region-beginning) (region-end)))
-          ((derived-mode-p 'prog-mode) (message "narrowing to defun") (narrow-to-defun))
+          ((derived-mode-p 'prog-mode) (narrow-to-defun))
           ((derived-mode-p 'org-mode) (org-narrow-to-subtree))
           (t (setq recursive-state-changed nil)))
     (if (or (not recursive-state-changed)
@@ -107,7 +107,6 @@ Argument END end of region."
       (widen))))
 
 (defadvice narrow-to-region (around potentially-recursive activate)
-  (message "advice of narrow to region")
   (if recursive-narrow-in
       ad-do-it
     (recursive-narrow-to-region (ad-get-arg 0) (ad-get-arg 1))))
