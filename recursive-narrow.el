@@ -98,6 +98,15 @@ Performs the exact same function but also allows
   (interactive "r")
 	(recursive-narrow-save-position (narrow-to-region start end)))
 
+(defun recursive-narrow-to-defun (&optional arg)
+  "Replacement of `narrow-to-defun'.
+Performs the exact same function but also allows
+`recursive-widen' to remove just one call to
+`recursive-narrow-to-region'. Optional ARG is ignored."
+  (interactive)
+	(recursive-narrow-save-position
+	 (narrow-to-defun)))
+
 (defun recursive-widen ()
   "Replacement of widen that will only pop one level of visibility."
   (interactive)
@@ -111,6 +120,7 @@ Performs the exact same function but also allows
           (narrow-to-region (car widen-to) (cdr widen-to))
           (recenter))
       (widen))))
+
 
 (global-set-key (kbd "C-x n w") 'recursive-widen)
 (global-set-key (kbd "C-x n n") 'recursive-narrow-or-widen-dwim)
