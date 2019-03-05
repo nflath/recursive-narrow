@@ -120,8 +120,8 @@ Performs the exact same function but also allows
       (widen))))
 
 
-(global-set-key (kbd "C-x n w") 'recursive-widen)
-(global-set-key (kbd "C-x n n") 'recursive-narrow-or-widen-dwim)
+(advice-add #'narrow-to-region :override #'recursive-narrow-to-region)
+(advice-add #'widen :override #'recursive-widen)
 
 (provide 'recursive-narrow)
 
