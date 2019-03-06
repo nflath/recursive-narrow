@@ -51,27 +51,25 @@
   :group 'recursive-narrow)
 
 (defcustom recursive-narrow-dwim-functions nil
-	"Functions to try for narrowing.
+  "Functions to try for narrowing.
 These functions do not get any arguments. They should narrow and
 return non-nil if applicable."
-	:type 'hook
-	:group 'recursive-narrow)
+  :type 'hook
+  :group 'recursive-narrow)
 
-(defvar recursive-narrow-buffers nil "List of buffer visibility settings.")
+(defvar-local recursive-narrow-settings nil "List of buffer visibility settings.")
 
 (defmacro recursive-narrow-save-position (body &optional unchanged)
-	"Execute BODY and save the buffer visibility if changed.
+  "Execute BODY and save the buffer visibility if changed.
 Executes UNCHANGED if the buffer visibility has not changed."
-	`(let ((previous-settings (cons (point-min) (point-max))))
-		 ,body
-		 (if (and (= (point-min) (car previous-settings))
-							(= (point-max) (cdr previous-settings)))
-				 ,unchanged
-			;; We narrowed, so save the information
-			(setq recursive-narrow-buffers
-						(cons (cons (current-buffer) previous-settings)
-									recursive-narrow-buffers)))))
-	
+  `(let ((previous-settings (cons (point-min) (point-max))))
+     ,body
+     (if (and (= (point-min) (car previous-settings))
+              (= (point-max) (cdr previous-settings)))
+         ,unchanged
+       ;; We narrowed, so save the information
+       (push previous-settings recursive-narrow-settings))))
+
 (defun recursive-narrow-or-widen-dwim ()
   "If the region is active, narrow to that region.
 Otherwise, narrow to the current function. If this has no effect,
@@ -79,14 +77,14 @@ widen the buffer. You can add more functions to
 `recursive-narrow-dwim-functions'."
   (interactive)
   (recursive-narrow-save-position
-	 (cond ((region-active-p) (narrow-to-region (region-beginning) (region-end)))
-				 ((run-hook-with-args-until-success 'recursive-narrow-dwim-functions))
-				 ((derived-mode-p 'prog-mode) (narrow-to-defun))
-				 ((derived-mode-p 'org-mode) (org-narrow-to-subtree)))
-	 ;; If we don't narrow
-	 (progn
-		 (message "Recursive buffers: %d" (length recursive-narrow-buffers))
-		 (recursive-widen))))
+   (cond ((region-active-p) (narrow-to-region (region-beginning) (region-end)))
+         ((run-hook-with-args-until-success 'recursive-narrow-dwim-functions))
+         ((derived-mode-p 'prog-mode) (narrow-to-defun))
+         ((derived-mode-p 'org-mode) (org-narrow-to-subtree)))
+   ;; If we don't narrow
+   (progn
+     (message "Recursive settings: %d" (length recursive-narrow-settings))
+     (recursive-widen))))
 
 (defun recursive-narrow-to-region (start end)
   "Replacement of `narrow-to-region'.
@@ -94,7 +92,7 @@ Performs the exact same function but also allows
 `recursive-widen' to remove just one call to
 `recursive-narrow-to-region'. START and END define the region."
   (interactive "r")
-	(recursive-narrow-save-position (narrow-to-region start end)))
+  (recursive-narrow-save-position (narrow-to-region start end)))
 
 (defun recursive-narrow-to-defun (&optional arg)
   "Replacement of `narrow-to-defun'.
@@ -102,19 +100,16 @@ Performs the exact same function but also allows
 `recursive-widen' to remove just one call to
 `recursive-narrow-to-region'. Optional ARG is ignored."
   (interactive)
-	(recursive-narrow-save-position
-	 (narrow-to-defun)))
+  (recursive-narrow-save-position
+   (narrow-to-defun)))
 
 (defun recursive-widen ()
   "Replacement of widen that will only pop one level of visibility."
   (interactive)
   (let (widen-to)
-    (if (assoc (current-buffer) recursive-narrow-buffers)
+    (if recursive-narrow-settings
         (progn
-          (setq widen-to (cdr (assoc (current-buffer) recursive-narrow-buffers)))
-          (setq recursive-narrow-buffers (remove
-                                          (assoc (current-buffer) recursive-narrow-buffers)
-                                          recursive-narrow-buffers))
+          (setq widen-to (pop recursive-narrow-settings))
           (narrow-to-region (car widen-to) (cdr widen-to))
           (recenter))
       (widen))))
